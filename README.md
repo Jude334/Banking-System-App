@@ -1,107 +1,96 @@
-# Banking-System-App
-A Python app that acts like a bank. You can display total, make deposit, make withdrawal or change user. It writes the information to a file, but currently it is not pulling information from the file; it only stores it in RAM.
+After getting some help on Stackoverflow, I decided to completely redo it. Right now, it works mostly as I want it to. The only problem is that I can't have more than one user/pass/amount block in the file. If I make a deposit, it will wipe out the rest. I'll explain the part in the code.
 
-	import sys
+	#U-Bank
+	#user logs in
+	#reads user/pass/amount from txt file
 
-	def open_file(file_name, mode):
-		'''Opens a file if exists, if not, exits'''
-		try:
-			the_file = open(file_name, mode)
-		except IOError as e:
-			print("Unable to open the file", file_name, "Ending program.\n", e)
-			input("\n\nPress enter to exit")
-			sys.exit()
-		else:
-			return the_file
+	def openFile():
+	    '''opens file, parses txt file into dictionary'''
+	    data = {}
+	    fileName = "D:/PythonProjects/banking.txt"
+	    with open(fileName, "r") as fh:
+		lines = [line.strip() for line in fh.readlines()]
+		for i in range(0, len(lines), 3):
+		    data.setdefault(lines[i], {})[lines[i+1]] = lines[i+2]   
+	    return data
 
-	def entry(the_file):
-		'''Checks if name/pass are in file,
-			if not, it adds it'''
-    
-		name = input("What is your name?: ") #stores name/pword into file and variable
-		pword = input("What is your password?: ")
+	def login(data):
+	    '''user logs in, checks if matches password in data'''
+	    inputName = input("Username: ")
+	    inputPassword = input("Password: ")
+	    if inputName in data and inputPassword in data[inputName]:
+		print("Amount: ", data[inputName][inputPassword])
+	    else:
+		print("User not found or password incorrect.")
+	    return inputName, inputPassword
 
-		tf = open(the_file, "a") #writes name/pword to file
-		tf.write(repr(name))
-		tf.write("\n")
-		tf.write(repr(pword))
+	def displayTotal(inputName, inputPassword, data):
+	    '''displays total for user'''
+	    if inputName in data and inputPassword in data[inputName]:
+		print("Amount: ", data[inputName][inputPassword])
 
-		return name, pword 
+	def deposit(inputName, inputPassword, data):
+	    '''user adds to account'''
+	    fileName = "D:/PythonProjects/banking.txt"
+	    oldAmount = data[inputName][inputPassword]
+	    with open(fileName, "r") as fh:
+		if inputName in data and inputPassword in data[inputName]:          
+		    depAmount = input("How much do you want to deposit?: ")
+		    newAmount = float(oldAmount) + float(depAmount)
+		    data[inputName][inputPassword] = newAmount
+		    with open(fileName, "w") as wf:
+			#Originally, I tried to write both blocks of user/pass/amount to the file,
+			#but it would change both blocks to the same name, passord, amount
+			wf.write(str(inputName) + "\n" + str(inputPassword) + "\n" + str(newAmount))
+	    return newAmount
+
+	def withdraw(inputName, inputPassword, data):
+	    '''user subtracts from account'''
+	    fileName = "D:/PythonProjects/banking.txt"
+	    oldAmount = data[inputName][inputPassword]
+	    with open(fileName, "r") as fh:
+		if inputName in data and inputPassword in data[inputName]:          
+		    depAmount = input("How much do you want to deposit?: ")
+		    newAmount = float(oldAmount) - float(depAmount)
+		    data[inputName][inputPassword] = newAmount
+		    with open(fileName, "w") as wf:
+			wf.write(str(inputName) + "\n" + str(inputPassword) + "\n" + str(newAmount))
+	    return newAmount
 
 	def menu():
-		'''Display menu, check user input, calls function depending
-			on input'''
-
-		print('''
-					Menu
-
-				1 - Display total
-				2 - Make deposit
-				3 - Make withdrawal
-				4 - Change user
-			  ''')
-
-		choice = int(input("What would you like to do?: (Enter 1 - 4) "))
-
-		return choice #returns choice to program 
-    
-	def deposit(tot_amount, the_file):
-		'''Asks for deposit amount, adds to total,
-		   writes total to file, returns total '''
-		dep_amount = float(input("How much would you like to deposit?: "))
-		tot_amount += dep_amount
-		tf = open(the_file, "a")
-		tf.write(repr(tot_amount))
-		tf.write("\n")
-		tf.close()
-		return tot_amount
-
-	def withdraw(tot_amount, the_file):
-		'''Ask for withdrawal amount, returns it, subtract from total'''
-		with_amount = float(input("How much would you like to withdraw?: "))
-		tot_amount -= with_amount
-		tf = open(the_file, "a")
-		tf.write(repr(tot_amount))
-		tf.write("\n")
-		tf.close()
-
-		return tot_amount
+	    '''Display menu, calls function depending on input'''   
+	    print('''
+		       U-Bank
+                
+		    Menu
+		    1 - Change user
+		    2 - Display total
+		    3 - Make deposit
+		    4 - Make withdrawal
+		    5 - Exit
+		  ''')
+	    choice = int(input("What would you like to do?: (Enter 1 - 5) "))
+	    return choice
 
 	def main():
-		'''Main loop'''
-		print("\t\tWelcome to U-Bank\n")
-		f = open_file("D:/PythonProjects/banking.txt", "a") #open file
-		login = entry("D:/PythonProjects/banking.txt") #writes name/pword to file
-		tot_amount = 0
-		new_amount = 0
+	    data = openFile()
+	    user, pword = login(data)
+	    while True:
+		choice = menu()
+		if choice == 1:
+		    user, pword = login(data)
+		elif choice == 2:
+		    total = displayTotal(user, pword, data)
+		elif choice == 3:
+		    dep = deposit(user, pword, data)
+		elif choice == 4:
+		    withdr = withdraw(user, pword, data)
+		elif choice == 5:
+		    print("Good-bye")
+		    break
 
-		again = " "
-		while again != "no":
-			choice = menu() #display menu, ask to make choice
-			if choice == 1: #display total
-					print("Your total is: ", tot_amount)
-			elif choice == 2:
-				new_amount = deposit(tot_amount, "D:/PythonProjects/banking.txt")
-				print("Your total is: ", new_amount)
-			elif choice == 3:
-				new_amount = withdraw(tot_amount, "D:/PythonProjects/banking.txt")
-				print("Your total is: ", new_amount)
-			elif choice == 4: #enter another name/pword to file
-				login = entry("D:/PythonProjects/banking.txt")
-				tot_amount = 0
-				new_amount = 0
-				continue #goes back to top of while loop
-			else: #doesn't enter 1 - 4
-				print("Not a valid choice...")
 
-			tot_amount = new_amount
+	main()  
 
-			again = input("Would you like to make another transaction?: ")
 
-		print("\nGoodbye")
-
-    
-    
-
-	main()
 	input("\n\nPress enter to exit")
